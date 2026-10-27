@@ -111,19 +111,20 @@ io.on('connection', (socket) => {
       }
 
       // Broadcast move to both players
+      const gameOver = game.chess.game_over();
       io.to(game.white.socket.id).emit('moveMade', {
         move,
         fen: game.chess.fen(),
         turn: game.chess.turn(),
-        gameOver: game.chess.isGameOver(),
-        result: game.chess.isGameOver() ? getGameResult(game.chess) : null
+        gameOver,
+        result: gameOver ? getGameResult(game.chess) : null
       });
       io.to(game.black.socket.id).emit('moveMade', {
         move,
         fen: game.chess.fen(),
         turn: game.chess.turn(),
-        gameOver: game.chess.isGameOver(),
-        result: game.chess.isGameOver() ? getGameResult(game.chess) : null
+        gameOver,
+        result: gameOver ? getGameResult(game.chess) : null
       });
 
       // Notify spectators
@@ -132,8 +133,8 @@ io.on('connection', (socket) => {
           move,
           fen: game.chess.fen(),
           turn: game.chess.turn(),
-          gameOver: game.chess.isGameOver(),
-          result: game.chess.isGameOver() ? getGameResult(game.chess) : null
+          gameOver,
+          result: gameOver ? getGameResult(game.chess) : null
         });
       });
 
@@ -209,7 +210,7 @@ io.on('connection', (socket) => {
     socket.emit('gameState', {
       fen: game.chess.fen(),
       turn: game.chess.turn(),
-      gameOver: game.chess.isGameOver()
+      gameOver: game.chess.game_over()
     });
   });
 
@@ -238,11 +239,11 @@ io.on('connection', (socket) => {
 });
 
 function getGameResult(chess) {
-  if (chess.isCheckmate()) return chess.turn() === 'w' ? 'black_wins' : 'white_wins';
-  if (chess.isDraw()) return 'draw';
-  if (chess.isStalemate()) return 'draw';
-  if (chess.isThreefoldRepetition()) return 'draw';
-  if (chess.isInsufficientMaterial()) return 'draw';
+  if (chess.in_checkmate()) return chess.turn() === 'w' ? 'black_wins' : 'white_wins';
+  if (chess.in_draw()) return 'draw';
+  if (chess.in_stalemate()) return 'draw';
+  if (chess.in_threefold_repetition()) return 'draw';
+  if (chess.insufficient_material()) return 'draw';
   return 'ongoing';
 }
 

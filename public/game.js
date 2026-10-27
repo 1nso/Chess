@@ -1,4 +1,4 @@
-// Chess Multiplayer Client
+// Chess Multiplayer Client - Fixed for chess.js 0.13.4
 const socket = io();
 
 let chess = new Chess();
@@ -9,8 +9,6 @@ let validMoves = [];
 let boardOrientation = 'white';
 let pendingPromotion = null;
 let myTurn = false;
-let opponentName = 'Opponent';
-let myName = 'You';
 
 // DOM Elements
 const screens = {
@@ -31,11 +29,7 @@ const gameElements = {
     promotionModal: document.getElementById('promotionModal'),
     gameStatus: document.getElementById('gameStatus'),
     opponentName: document.getElementById('opponentName'),
-    opponentRating: document.getElementById('opponentRating'),
     myName: document.getElementById('myName'),
-    myRating: document.getElementById('myRating'),
-    opponentTimer: document.getElementById('opponentTimer'),
-    myTimer: document.getElementById('myTimer'),
     moveList: document.getElementById('moveList'),
     offerDrawBtn: document.getElementById('offerDrawBtn'),
     resignBtn: document.getElementById('resignBtn'),
@@ -55,10 +49,10 @@ const modals = {
     declineDrawBtn: document.getElementById('declineDrawBtn')
 };
 
-// Piece Unicode
+// Piece Unicode - chess.js 0.13.4 uses lowercase type
 const PIECES = {
-    'wK': '♔', 'wQ': '♕', 'wR': '♖', 'wB': '♗', 'wN': '♘', 'wP': '♙',
-    'bK': '♚', 'bQ': '♛', 'bR': '♜', 'bB': '♝', 'bN': '♞', 'bP': '♟'
+    'wk': '♔', 'wq': '♕', 'wr': '♖', 'wb': '♗', 'wn': '♘', 'wp': '♙',
+    'bk': '♚', 'bq': '♛', 'br': '♜', 'bb': '♝', 'bn': '♞', 'bp': '♟'
 };
 
 // Initialize
@@ -70,12 +64,10 @@ function init() {
 }
 
 function setupEventListeners() {
-    // Landing screen
     landingElements.findMatchBtn.addEventListener('click', () => findMatch());
     landingElements.playLocalBtn.addEventListener('click', () => startLocalGame());
     landingElements.cancelMatchBtn.addEventListener('click', () => cancelMatchmaking());
 
-    // Game actions
     gameElements.offerDrawBtn.addEventListener('click', () => offerDraw());
     gameElements.resignBtn.addEventListener('click', () => resign());
     gameElements.sendChatBtn.addEventListener('click', () => sendChat());
@@ -83,18 +75,15 @@ function setupEventListeners() {
         if (e.key === 'Enter') sendChat();
     });
 
-    // Modals
     modals.playAgainBtn.addEventListener('click', () => playAgain());
     modals.backToMenuBtn.addEventListener('click', () => backToMenu());
     modals.acceptDrawBtn.addEventListener('click', () => acceptDraw());
     modals.declineDrawBtn.addEventListener('click', () => declineDraw());
 
-    // Promotion modal
     document.querySelectorAll('.promotion-options button').forEach(btn => {
         btn.addEventListener('click', () => handlePromotion(btn.dataset.piece));
     });
 
-    // Socket events
     socket.on('connect', () => console.log('Connected to server'));
     socket.on('disconnect', () => console.log('Disconnected from server'));
     socket.on('waiting', handleWaiting);
@@ -143,13 +132,11 @@ function handleGameFound(data) {
     renderBoard();
     updateGameStatus();
 
-    // Update UI
     gameElements.opponentName.textContent = 'Opponent';
     gameElements.myName.textContent = 'You (' + (myColor === 'w' ? 'White' : 'Black') + ')';
 }
 
 function startLocalGame() {
-    // Local two-player mode
     gameId = 'local-' + Date.now();
     myColor = 'w';
     boardOrientation = 'white';
@@ -162,8 +149,6 @@ function startLocalGame() {
 
     gameElements.opponentName.textContent = 'Player 2 (Black)';
     gameElements.myName.textContent = 'Player 1 (White)';
-
-    // Simulate local opponent for testing
     window.localGame = true;
 }
 
@@ -183,40 +168,33 @@ function renderBoard() {
     for (let rank = 7; rank >= 0; rank--) {
         for (let file = 0; file < 8; file++) {
             const square = document.createElement('div');
-            const displayFile = boardOrientation === 'white' ? file : 7 - file;
-            const displayRank = boardOrientation === 'white' ? rank : 7 - rank;
-            const squareIndex = rank * 8 + file;
             const algebraic = String.fromCharCode(97 + file) + (rank + 1);
 
             square.className = `square ${(file + rank) % 2 === 0 ? 'white' : 'black'}`;
             square.dataset.square = algebraic;
-            square.dataset.index = squareIndex;
 
-            // Add piece
+            // Add piece - chess.js 0.13.4 get() returns {type, color} with lowercase type
             const piece = chess.get(algebraic);
             if (piece) {
                 const pieceEl = document.createElement('span');
                 pieceEl.className = 'piece';
-                pieceEl.textContent = PIECES[piece.color + piece.type.toUpperCase()];
+                pieceEl.textContent = PIECES[piece.color + piece.type];
                 pieceEl.draggable = true;
-                pieceEl.dataset.piece = piece.color + piece.type.toUpperCase();
+                pieceEl.dataset.piece = piece.color + piece.type;
                 pieceEl.dataset.square = algebraic;
                 square.appendChild(pieceEl);
             }
 
-            // Highlight selected
             if (algebraic === selectedSquare) {
                 square.classList.add('selected');
             }
 
-            // Highlight valid moves
             if (validMoves.includes(algebraic)) {
                 const dot = document.createElement('div');
                 dot.className = 'valid-move';
                 square.appendChild(dot);
             }
 
-            // Highlight last move
             const history = chess.history({ verbose: true });
             if (history.length > 0) {
                 const lastMove = history[history.length - 1];
@@ -225,12 +203,10 @@ function renderBoard() {
                 }
             }
 
-            // Highlight check
-            if (chess.inCheck() && piece && piece.type === 'k' && piece.color === chess.turn()) {
+            if (chess.in_check() && piece && piece.type === 'k' && piece.color === chess.turn()) {
                 square.classList.add('check');
             }
 
-            // Drag events
             square.addEventListener('dragover', handleDragOver);
             square.addEventListener('drop', handleDrop);
             square.addEventListener('dragleave', handleDragLeave);
@@ -240,10 +216,8 @@ function renderBoard() {
         }
     }
 
-    // Add file/rank labels
     addBoardLabels();
 
-    // Piece drag events
     document.querySelectorAll('.piece').forEach(piece => {
         piece.addEventListener('dragstart', handleDragStart);
         piece.addEventListener('dragend', handleDragEnd);
@@ -278,7 +252,6 @@ function handleDragStart(e) {
     const square = e.target.dataset.square;
     const piece = e.target.dataset.piece;
 
-    // Check if it's player's piece and turn
     const pieceColor = piece[0];
     if ((myColor === 'w' && pieceColor !== 'w') || (myColor === 'b' && pieceColor !== 'b')) {
         e.preventDefault();
@@ -333,18 +306,14 @@ function handleSquareClick(square) {
     const piece = chess.get(square);
 
     if (selectedSquare === square) {
-        // Deselect
         selectedSquare = null;
         validMoves = [];
     } else if (piece && ((myColor === 'w' && piece.color === 'w') || (myColor === 'b' && piece.color === 'b'))) {
-        // Select own piece
         selectedSquare = square;
         validMoves = getValidMoves(square);
     } else if (selectedSquare && validMoves.includes(square)) {
-        // Move to valid square
         attemptMove(selectedSquare, square);
     } else {
-        // Invalid click
         selectedSquare = null;
         validMoves = [];
     }
@@ -358,7 +327,6 @@ function getValidMoves(square) {
 }
 
 function attemptMove(from, to) {
-    // Check for promotion
     const piece = chess.get(from);
     const rank = to[1];
     const isPromotion = piece && piece.type === 'p' && ((piece.color === 'w' && rank === '8') || (piece.color === 'b' && rank === '1'));
@@ -397,15 +365,14 @@ function makeMove(from, to, promotion = 'q') {
     const move = { from, to, promotion };
 
     if (window.localGame) {
-        // Local game - just make move locally
         tryMoveLocally(move);
     } else {
-        // Online game - send to server
         socket.emit('makeMove', { gameId, move });
     }
 }
 
 function tryMoveLocally(move) {
+    // chess.js 0.13.4 uses .move() with object or SAN string
     const result = chess.move(move);
     if (!result) {
         showIllegalMove('Illegal move');
@@ -420,7 +387,6 @@ function tryMoveLocally(move) {
 }
 
 function handleMoveMade(data) {
-    // Update local chess instance
     chess.load(data.fen);
     myTurn = (chess.turn() === (myColor === 'w' ? 'w' : 'b'));
 
@@ -448,14 +414,14 @@ function showIllegalMove(message) {
 
 // ============ GAME STATE ============
 function updateGameStatus() {
-    if (chess.isGameOver()) return;
+    if (chess.game_over()) return;
 
     if (myTurn) {
         gameElements.gameStatus.textContent = 'Your turn';
         gameElements.gameStatus.style.color = '#4ecdc4';
     } else {
         gameElements.gameStatus.textContent = "Opponent's turn";
-        gameElements.gameStatus.style.color = var('--accent');
+        gameElements.gameStatus.style.color = '#e94560';
     }
 }
 
@@ -488,14 +454,14 @@ function updateMoveHistory() {
 }
 
 function checkGameEnd() {
-    if (chess.isGameOver()) {
+    if (chess.game_over()) {
         const result = getGameResult();
         handleGameEndLocally(result);
     }
 }
 
 function getGameResult() {
-    if (chess.isCheckmate()) return chess.turn() === 'w' ? 'black_wins' : 'white_wins';
+    if (chess.in_checkmate()) return chess.turn() === 'w' ? 'black_wins' : 'white_wins';
     return 'draw';
 }
 
@@ -504,7 +470,6 @@ function handleGameEndLocally(result) {
 
     const isWhite = myColor === 'w';
     const iWon = (result === 'white_wins' && isWhite) || (result === 'black_wins' && !isWhite);
-    const iLost = (result === 'white_wins' && !isWhite) || (result === 'black_wins' && isWhite);
 
     if (result === 'draw') {
         title = 'Draw!';
@@ -512,7 +477,7 @@ function handleGameEndLocally(result) {
     } else if (iWon) {
         title = 'Victory! 🎉';
         message = 'You won the game!';
-    } else if (iLost) {
+    } else {
         title = 'Defeat 😔';
         message = 'You lost the game.';
     }
@@ -526,24 +491,12 @@ function handleGameEnd(data) {
     let title, message;
 
     if (data.result === 'win') {
-        if (data.reason === 'opponent_resigned') {
-            title = 'Victory! 🎉';
-            message = 'Your opponent resigned.';
-        } else if (data.reason === 'opponent_disconnected') {
-            title = 'Victory! 🎉';
-            message = 'Your opponent disconnected.';
-        } else {
-            title = 'Victory! 🎉';
-            message = 'You won the game!';
-        }
+        title = 'Victory! 🎉';
+        message = data.reason === 'opponent_resigned' ? 'Your opponent resigned.' :
+                  data.reason === 'opponent_disconnected' ? 'Your opponent disconnected.' : 'You won!';
     } else if (data.result === 'loss') {
-        if (data.reason === 'resigned') {
-            title = 'Defeat 😔';
-            message = 'You resigned.';
-        } else {
-            title = 'Defeat 😔';
-            message = 'You lost the game.';
-        }
+        title = 'Defeat 😔';
+        message = data.reason === 'resigned' ? 'You resigned.' : 'You lost the game.';
     } else {
         title = 'Draw!';
         message = data.reason === 'agreed' ? 'Draw agreed.' : 'The game ended in a draw.';
@@ -559,7 +512,6 @@ function handleDrawOffered() {
 }
 
 function handleDrawDeclined() {
-    // Just a notification, could add UI feedback
     gameElements.gameStatus.textContent = 'Draw declined';
     setTimeout(updateGameStatus, 1500);
 }
@@ -601,12 +553,8 @@ function sendChat() {
     const message = gameElements.chatInput.value.trim();
     if (!message) return;
 
-    // Add own message to chat
     addChatMessage(message, true);
     gameElements.chatInput.value = '';
-
-    // Send to opponent (in real implementation)
-    // socket.emit('chat', { gameId, message });
 }
 
 function addChatMessage(message, own = false) {
@@ -639,7 +587,6 @@ function backToMenu() {
     landingElements.playLocalBtn.classList.remove('hidden');
     landingElements.matchmakingStatus.classList.add('hidden');
 
-    // Reset state
     gameId = null;
     myColor = null;
     myTurn = false;
@@ -648,14 +595,4 @@ function backToMenu() {
     chess = new Chess();
 }
 
-function cleanupGame() {
-    gameId = null;
-    myColor = null;
-    myTurn = false;
-    selectedSquare = null;
-    validMoves = [];
-    chess = new Chess();
-}
-
-// Start the app
 init();
