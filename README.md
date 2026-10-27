@@ -1,1 +1,1 @@
-"# Chess" 
+Just chess multiplayer.
