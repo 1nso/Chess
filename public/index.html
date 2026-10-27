@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Chess ♟️</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Landing Screen -->
+        <div id="landingScreen" class="screen active">
+            <div class="landing-content">
+                <h1>♟️ Multiplayer Chess</h1>
+                <p class="subtitle">Play real-time chess against real players</p>
+
+                <div class="buttons">
+                    <button id="findMatchBtn" class="btn btn-primary">Find Match</button>
+                    <button id="playLocalBtn" class="btn btn-secondary">Play Locally (2 Players)</button>
+                </div>
+
+                <div id="matchmakingStatus" class="matchmaking-status hidden">
+                    <div class="spinner"></div>
+                    <p>Searching for opponent...</p>
+                    <button id="cancelMatchBtn" class="btn btn-small">Cancel</button>
+                </div>
+
+                <div class="stats">
+                    <span id="onlineCount">0 players online</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="screen">
+            <div class="game-header">
+                <div class="player-info" id="opponentInfo">
+                    <span class="player-name" id="opponentName">Opponent</span>
+                    <span class="player-rating" id="opponentRating">?</span>
+                    <div class="timer" id="opponentTimer">--:--</div>
+                </div>
+                <div class="game-status" id="gameStatus">Your turn</div>
+                <div class="player-info" id="myInfo">
+                    <span class="player-name" id="myName">You</span>
+                    <span class="player-rating" id="myRating">?</span>
+                    <div class="timer" id="myTimer">--:--</div>
+                </div>
+            </div>
+
+            <div class="game-main">
+                <div class="board-container">
+                    <div id="chessBoard" class="chess-board"></div>
+                    <div id="promotionModal" class="promotion-modal hidden">
+                        <div class="promotion-options">
+                            <button data-piece="q">♕</button>
+                            <button data-piece="r">♖</button>
+                            <button data-piece="b">♗</button>
+                            <button data-piece="n">♘</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="side-panel">
+                    <div class="move-history">
+                        <h3>Move History</h3>
+                        <div id="moveList" class="move-list"></div>
+                    </div>
+                    <div class="game-actions">
+                        <button id="offerDrawBtn" class="btn btn-small">Offer Draw</button>
+                        <button id="resignBtn" class="btn btn-danger btn-small">Resign</button>
+                    </div>
+                    <div class="chat">
+                        <h3>Chat</h3>
+                        <div id="chatMessages" class="chat-messages"></div>
+                        <div class="chat-input">
+                            <input type="text" id="chatInput" placeholder="Type a message..." maxlength="100">
+                            <button id="sendChatBtn" class="btn btn-small">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div id="gameOverModal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="gameOverTitle">Game Over</h2>
+                <p id="gameOverMessage"></p>
+                <div class="modal-buttons">
+                    <button id="playAgainBtn" class="btn btn-primary">Play Again</button>
+                    <button id="backToMenuBtn" class="btn btn-secondary">Main Menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Draw Offer Modal -->
+        <div id="drawOfferModal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Draw Offered</h2>
+                <p>Your opponent offers a draw. Accept?</p>
+                <div class="modal-buttons">
+                    <button id="acceptDrawBtn" class="btn btn-primary">Accept</button>
+                    <button id="declineDrawBtn" class="btn btn-secondary">Decline</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/1.0.0-beta.8/chess.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
